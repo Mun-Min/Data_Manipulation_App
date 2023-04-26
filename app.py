@@ -1,54 +1,43 @@
 import streamlit as st 
 import pandas as pd
-import re
-from openpyxl import load_workbook
-from Sheets_to_Excel import getGoogleSheet 
-from Sheets_to_Excel import getFilePath
-from Sheets_to_Excel import viewData
 
 st.markdown('# Data Manipulation App')
 
-#st.markdown('''
-            ###### \nPlease share your google sheet with the following email address 
-#            so that it can be send to Google Cloud for fast loading: 
-#            muni-s-test-service-account@symmetric-flare-370800.iam.gserviceaccount.com''')
+# File uploader
+uploaded_file = st.file_uploader("Choose an Excel file", type=["xlsx"])
 
-url = st.text_input('Enter the url of your Google Sheet: ')
+# Display uploaded file
+if uploaded_file:
+    st.write("Uploaded file:")
+    st.write(uploaded_file.name)
 
-# convert Google Sheet to Excel and download to user's downloads folder 
-if st.button('Convert Google Sheet to Excel File'):
-    getGoogleSheet(url)
-    viewData()
+    # Load Excel file
+    sheet_names = pd.read_excel(uploaded_file, sheet_name=None).keys()
+    selected_sheet = st.selectbox("Select a sheet", sheet_names)
+    df = pd.read_excel(uploaded_file, sheet_name=selected_sheet)
 
-# create input fields for the row and column
-row = st.number_input('Row:')
-column = st.number_input('Column:')
+    # Display data
+    st.write("Data:")
+    st.write(df)
 
-# create an input field for the data to add
-data = st.text_input('Data:')
+    # Perform data manipulation
+    columns = list(df.columns)
+    round_column = st.selectbox("Select a column to round", columns)
+    decimal_places = st.number_input("Enter the number of decimal places to round to", min_value=0, max_value=10)
+    
+    try:
+        rounded_df = df.round({round_column: decimal_places})
+    except TypeError:
+        st.error("No columns can be rounded.")
+        st.stop()
+    
+    st.write("Rounded Data:")
+    st.write(rounded_df)
 
-# create a button that, when clicked, will add the data to the specified row and column
-if st.button('Add Data'):
+    # Export data to new Excel file
+    output_file = st.text_input("Enter output file name", "output.xlsx")
+    if st.button("Export to Excel"):
+        with pd.ExcelWriter(output_file) as writer:
+            rounded_df.to_excel(writer, sheet_name=selected_sheet, index=False)
 
-    # load the Excel file
-    wb = load_workbook(getFilePath())
-
-    # get the active sheet in the Excel file
-    ws = wb.active
-
-    # get the cell at the specified row and column
-    cell = ws.cell(row=row, column=column)
-
-    # set the value of the cell
-    cell.value = data
-
-    # save the Excel file
-    wb.save(getFilePath())
-
-    # show a success message
-    st.success('Data added successfully!')
-
-    # Display the updated data from the DataFrame
-    viewData()
-
-## FIX :: HOW TO ROUND A SPECIFIC COLUMNS VALUES TO 2 DECIMAL POINTS & DISPLAY/SAVE EXCEL FILE PROPERLY
+        st.write("Exported data to Excel file:", output_file)
