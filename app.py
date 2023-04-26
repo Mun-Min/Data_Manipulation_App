@@ -37,13 +37,15 @@ if uploaded_file:
     st.write(rounded_df)
 
     # Export data to new Excel file
-    output_file = st.text_input("Enter output file name", "output.xlsx")
+    output_file = st.text_input("Enter output file name", "output")
     if st.button("Export to Excel"):
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             rounded_df.to_excel(writer, sheet_name=selected_sheet, index=False)
 
-        b64 = base64.b64encode(output.getvalue()).decode()
-        href = f'<a href="data:file/xlsx;base64,{b64}" download="{output_file}">Download file</a>'
-        st.markdown(href, unsafe_allow_html=True)
-        st.write("Exported data to Excel file:", output_file)
+        output.seek(0)
+        b64 = base64.b64encode(output.read()).decode()
+        href = f'<a href="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,{b64}" download="{output_file}.xlsx">Download file</a>'
+        download_button = st.markdown(href, unsafe_allow_html=True)
+        st.write("Exported data to Excel file:", output_file + ".xlsx")
+        st.write("Please check the download folder and open the file in Excel.")
