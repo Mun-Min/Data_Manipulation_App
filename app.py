@@ -1,5 +1,7 @@
 import streamlit as st 
 import pandas as pd
+import io
+import base64
 
 st.markdown('# Data Manipulation App')
 
@@ -37,7 +39,11 @@ if uploaded_file:
     # Export data to new Excel file
     output_file = st.text_input("Enter output file name", "output.xlsx")
     if st.button("Export to Excel"):
-        with pd.ExcelWriter(output_file) as writer:
+        output = io.BytesIO()
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
             rounded_df.to_excel(writer, sheet_name=selected_sheet, index=False)
 
+        b64 = base64.b64encode(output.getvalue()).decode()
+        href = f'<a href="data:file/xlsx;base64,{b64}" download="{output_file}">Download file</a>'
+        st.markdown(href, unsafe_allow_html=True)
         st.write("Exported data to Excel file:", output_file)
